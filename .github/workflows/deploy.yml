@@ -1,0 +1,53 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Test HTML files
+        run: |
+          echo "🧪 Testing HTML files..."
+          
+          # Test index.html exists
+          if [ ! -f index.html ]; then
+            echo "❌ index.html missing!"
+            exit 1
+          fi
+          echo "✅ index.html exists"
+          
+          # Test index.html has HTML tag
+          if grep -q "<html" index.html; then
+            echo "✅ index.html valid"
+          else
+            echo "❌ index.html missing <html> tag"
+            exit 1
+          fi
+          
+          # Test dashboard.html if it exists
+          if [ -f dashboard.html ]; then
+            if grep -q "<html" dashboard.html; then
+              echo "✅ dashboard.html valid"
+            else
+              echo "❌ dashboard.html missing <html> tag"
+              exit 1
+            fi
+          fi
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger webhook
+        run: |
+          echo "🚀 Triggering deployment webhook..."
+          curl -X POST http://localhost:9000/hooks/github-deploy
+          echo "✅ Webhook triggered"
