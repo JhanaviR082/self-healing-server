@@ -18,15 +18,19 @@ jobs:
       
       - name: Validate HTML
         run: |
-          echo "🧪 Validating HTML..."
+          echo "🧪 Validating HTML (strict mode)..."
           
-          if tidy -e index.html 2>&1 | grep -q "Error"; then
-            echo "❌ HTML errors found:"
-            tidy -e index.html
+          # Run tidy and capture ALL output
+          OUTPUT=$(tidy -e index.html 2>&1)
+          
+          # Check if there are ANY issues (Error OR Warning)
+          if echo "$OUTPUT" | grep -q "Error:\|Warning:"; then
+            echo "❌ HTML issues found:"
+            echo "$OUTPUT"
             exit 1
           fi
           
-          echo "✅ HTML is valid!"
+          echo "✅ HTML is perfect!"
 
   # CD: Deploy runs on self-hosted runner (your VM)
   deploy:
