@@ -6,30 +6,27 @@ on:
 
 jobs:
   # CI: Tests run on GitHub's servers
-  test:
+test:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Test HTML files
+      - name: Install HTML validator
+        run: sudo apt-get install -y tidy
+      
+      - name: Validate HTML
         run: |
-          echo "🧪 Testing HTML files..."
+          echo "🧪 Validating HTML..."
           
-          if [ ! -f index.html ]; then
-            echo "❌ index.html missing!"
+          if tidy -e index.html 2>&1 | grep -q "Error"; then
+            echo "❌ HTML errors found:"
+            tidy -e index.html
             exit 1
           fi
-          echo "✅ index.html exists"
           
-          if grep -q "<html" index.html; then
-            echo "✅ index.html valid"
-          else
-            echo "❌ index.html missing <html> tag"
-            exit 1
-          fi
-
+          echo "✅ HTML is valid!"
   # CD: Deploy runs on self-hosted runner (your VM)
   deploy:
     needs: test
