@@ -1,15 +1,586 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Self-Healing Server</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Self-Healing Server</title>
+  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #0d0d0f;
+      --bg-panel: #161618;
+      --bg-card: #1c1c1e;
+      --bg-card-hover: #242426;
+      --border: rgba(255,255,255,0.07);
+      --border-active: rgba(255,255,255,0.13);
+      --text-primary: #f5f5f7;
+      --text-secondary: #98989f;
+      --text-tertiary: #545458;
+      --green: #30d158;
+      --green-glow: rgba(48, 209, 88, 0.18);
+      --green-dim: rgba(48, 209, 88, 0.08);
+      --blue: #0a84ff;
+      --blue-glow: rgba(10, 132, 255, 0.18);
+      --yellow: #ffd60a;
+      --red: #ff453a;
+      --orange: #ff9f0a;
+      --purple: #bf5af2;
+      --radius: 14px;
+      --radius-sm: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    /* ─── Noise texture overlay ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    /* ─── Subtle background glow ─── */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 600px;
+      background: radial-gradient(ellipse, rgba(48,209,88,0.04) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 24px 60px;
+    }
+
+    /* ─── Window chrome ─── */
+    .window-chrome {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03),
+        0 20px 60px rgba(0,0,0,0.6),
+        0 8px 24px rgba(0,0,0,0.4);
+      animation: slideUp 0.6s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .titlebar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: filter 0.2s;
+    }
+    .dot:hover { filter: brightness(1.2); }
+    .dot.red    { background: #ff5f57; box-shadow: 0 0 6px rgba(255,95,87,0.4); }
+    .dot.yellow { background: #febc2e; box-shadow: 0 0 6px rgba(254,188,46,0.4); }
+    .dot.green  { background: #28c840; box-shadow: 0 0 6px rgba(40,200,64,0.4); }
+
+    .titlebar-label {
+      flex: 1;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.02em;
+    }
+
+    .titlebar-spacer { width: 52px; }
+
+    /* ─── Window body ─── */
+    .window-body { padding: 28px 28px 32px; }
+
+    /* ─── Hero status ─── */
+    .hero {
+      text-align: center;
+      margin-bottom: 32px;
+      animation: fadeIn 0.7s 0.2s both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--green-dim);
+      border: 1px solid rgba(48,209,88,0.2);
+      border-radius: 999px;
+      padding: 6px 14px;
+      margin-bottom: 18px;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.6; transform: scale(0.85); }
+    }
+
+    .badge-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--green);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .hero p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* ─── Metrics grid ─── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+      animation: fadeIn 0.7s 0.35s both;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+      cursor: default;
+    }
+
+    .metric-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-active);
+      transform: translateY(-2px);
+    }
+
+    .metric-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .metric-value {
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .metric-bar {
+      height: 3px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .metric-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 1s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    .green-val  { color: var(--green); }
+    .blue-val   { color: var(--blue); }
+    .orange-val { color: var(--orange); }
+
+    .bar-green  { background: var(--green); box-shadow: 0 0 8px var(--green-glow); }
+    .bar-blue   { background: var(--blue); box-shadow: 0 0 8px var(--blue-glow); }
+    .bar-orange { background: var(--orange); }
+
+    /* ─── Services list ─── */
+    .section-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 12px;
+    }
+
+    .services-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+      animation: fadeIn 0.7s 0.45s both;
+    }
+
+    .service-row {
+      display: flex;
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 13px 16px;
+      transition: background 0.2s, border-color 0.2s;
+      cursor: default;
+    }
+
+    .service-row:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-active);
+    }
+
+    .service-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+
+    .icon-green  { background: var(--green-dim); }
+    .icon-blue   { background: rgba(10,132,255,0.1); }
+    .icon-purple { background: rgba(191,90,242,0.1); }
+    .icon-orange { background: rgba(255,159,10,0.1); }
+
+    .service-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      flex: 1;
+    }
+
+    .service-meta {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      font-family: 'JetBrains Mono', monospace;
+      margin-right: 16px;
+    }
+
+    .service-status {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.04em;
+    }
+
+    .status-ok      { background: var(--green-dim); color: var(--green); border: 1px solid rgba(48,209,88,0.2); }
+    .status-warn    { background: rgba(255,159,10,0.1); color: var(--orange); border: 1px solid rgba(255,159,10,0.2); }
+    .status-healing { background: rgba(10,132,255,0.1); color: var(--blue); border: 1px solid rgba(10,132,255,0.2); }
+
+    /* ─── Log terminal ─── */
+    .terminal {
+      background: #0a0a0c;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      animation: fadeIn 0.7s 0.55s both;
+    }
+
+    .terminal-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terminal-title {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .terminal-body {
+      padding: 14px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.8;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    .log-line { display: flex; gap: 10px; }
+    .log-time { color: var(--text-tertiary); flex-shrink: 0; }
+    .log-ok   { color: var(--green); }
+    .log-warn { color: var(--yellow); }
+    .log-info { color: var(--blue); }
+    .log-heal { color: var(--purple); }
+
+    /* ─── Footer ─── */
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      animation: fadeIn 0.7s 0.65s both;
+    }
+
+    .footer-left {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    /* ─── Scrollbar ─── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 999px; }
+  </style>
 </head>
 <body>
-    <h1>🚀  Self-Healing Server with Auto-Deploy</h1>
-    <p>Version: 2.0</p>
-    <p>Omgggggggg Hiiiiiii!!!!!</p>
-    <p>Last updated: <span id="time"></span></p>
-    <script>
-        document.getElementById('time').innerText = new Date().toLocaleString();
-    </script>
+
+<div class="container">
+  <div class="window-chrome">
+
+    <!-- Title bar -->
+    <div class="titlebar">
+      <div class="traffic-lights">
+        <div class="dot red"></div>
+        <div class="dot yellow"></div>
+        <div class="dot green"></div>
+      </div>
+      <div class="titlebar-label">linux-server-project — system monitor</div>
+      <div class="titlebar-spacer"></div>
+    </div>
+
+    <div class="window-body">
+
+      <!-- Hero -->
+      <div class="hero">
+        <div class="status-badge">
+          <div class="pulse-dot"></div>
+          <span class="badge-text">All Systems Operational</span>
+        </div>
+        <h1>🛡️ Self-Healing Server</h1>
+        <p>Auto-healing active · Monitoring 4 services · No incidents</p>
+      </div>
+
+      <!-- Metrics -->
+      <div class="section-title">System Metrics</div>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">CPU Usage</div>
+          <div class="metric-value green-val" id="cpu-val">23%</div>
+          <div class="metric-bar"><div class="metric-bar-fill bar-green" id="cpu-bar" style="width:23%"></div></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Memory</div>
+          <div class="metric-value blue-val" id="mem-val">61%</div>
+          <div class="metric-bar"><div class="metric-bar-fill bar-blue" id="mem-bar" style="width:61%"></div></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Disk I/O</div>
+          <div class="metric-value orange-val" id="disk-val">38%</div>
+          <div class="metric-bar"><div class="metric-bar-fill bar-orange" id="disk-bar" style="width:38%"></div></div>
+        </div>
+      </div>
+
+      <!-- Services -->
+      <div class="section-title">Services</div>
+      <div class="services-list">
+        <div class="service-row">
+          <div class="service-icon icon-green">🌐</div>
+          <div class="service-name">nginx</div>
+          <div class="service-meta">uptime 14d 6h</div>
+          <div class="service-status status-ok">running</div>
+        </div>
+        <div class="service-row">
+          <div class="service-icon icon-blue">🗄️</div>
+          <div class="service-name">postgresql</div>
+          <div class="service-meta">uptime 14d 6h</div>
+          <div class="service-status status-ok">running</div>
+        </div>
+        <div class="service-row">
+          <div class="service-icon icon-purple">📦</div>
+          <div class="service-name">redis</div>
+          <div class="service-meta">uptime 2d 3h</div>
+          <div class="service-status status-warn">high mem</div>
+        </div>
+        <div class="service-row">
+          <div class="service-icon icon-orange">⚙️</div>
+          <div class="service-name">worker-daemon</div>
+          <div class="service-meta">restarted 2m ago</div>
+          <div class="service-status status-healing">healing</div>
+        </div>
+      </div>
+
+      <!-- Terminal log -->
+      <div class="section-title">Heal Log</div>
+      <div class="terminal">
+        <div class="terminal-titlebar">
+          <div class="terminal-title">~ /var/log/heald.log</div>
+        </div>
+        <div class="terminal-body" id="log-body">
+          <div class="log-line"><span class="log-time">00:00:01</span><span class="log-ok">[OK]    Boot complete. Self-heal daemon initialised.</span></div>
+          <div class="log-line"><span class="log-time">00:00:03</span><span class="log-info">[INFO]  Watching: nginx, postgresql, redis, worker-daemon</span></div>
+          <div class="log-line"><span class="log-time">00:00:10</span><span class="log-ok">[OK]    Health check passed — all services nominal.</span></div>
+          <div class="log-line"><span class="log-time">00:02:41</span><span class="log-warn">[WARN]  worker-daemon exited unexpectedly (code 137)</span></div>
+          <div class="log-line"><span class="log-time">00:02:41</span><span class="log-heal">[HEAL]  Restarting worker-daemon... attempt 1/3</span></div>
+          <div class="log-line"><span class="log-time">00:02:43</span><span class="log-ok">[OK]    worker-daemon restarted successfully.</span></div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div class="footer-left" id="last-check">Last checked: —</div>
+        <div class="footer-right">
+          <div class="live-dot"></div>
+          live monitoring
+        </div>
+      </div>
+
+    </div><!-- /window-body -->
+  </div><!-- /window-chrome -->
+</div>
+
+<script>
+  // Update timestamp
+  function updateTime() {
+    document.getElementById('last-check').textContent =
+      'Last checked: ' + new Date().toLocaleString();
+  }
+  updateTime();
+
+  // Simulate fluctuating metrics
+  function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+  function updateMetrics() {
+    const cpu  = rand(12, 45);
+    const mem  = rand(55, 75);
+    const disk = rand(20, 60);
+
+    document.getElementById('cpu-val').textContent  = cpu + '%';
+    document.getElementById('mem-val').textContent  = mem + '%';
+    document.getElementById('disk-val').textContent = disk + '%';
+
+    document.getElementById('cpu-bar').style.width  = cpu + '%';
+    document.getElementById('mem-bar').style.width  = mem + '%';
+    document.getElementById('disk-bar').style.width = disk + '%';
+
+    updateTime();
+  }
+
+  setInterval(updateMetrics, 3000);
+
+  // Live log ticker
+  const newEntries = [
+    ['log-ok',   '[OK]    Health check passed — all services nominal.'],
+    ['log-info', '[INFO]  redis memory pressure: 81% — monitoring.'],
+    ['log-ok',   '[OK]    nginx — 200 OK on /health endpoint.'],
+    ['log-heal', '[HEAL]  Proactive cache flush scheduled for redis.'],
+    ['log-ok',   '[OK]    postgresql replication lag: 0ms.'],
+    ['log-info', '[INFO]  Disk read latency nominal (< 2ms).'],
+  ];
+  let logIdx = 0;
+
+  function addLogLine() {
+    const body = document.getElementById('log-body');
+    const [cls, msg] = newEntries[logIdx % newEntries.length];
+    logIdx++;
+    const now = new Date();
+    const ts = String(now.getHours()).padStart(2,'0') + ':' +
+               String(now.getMinutes()).padStart(2,'0') + ':' +
+               String(now.getSeconds()).padStart(2,'0');
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.innerHTML = `<span class="log-time">${ts}</span><span class="${cls}">${msg}</span>`;
+    line.style.opacity = '0';
+    line.style.transition = 'opacity 0.4s';
+    body.appendChild(line);
+    requestAnimationFrame(() => { line.style.opacity = '1'; });
+    body.scrollTop = body.scrollHeight;
+    if (body.children.length > 20) body.removeChild(body.children[0]);
+  }
+
+  setInterval(addLogLine, 4000);
+</script>
 </body>
 </html>
