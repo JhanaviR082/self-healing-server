@@ -27,6 +27,7 @@ test:
           fi
           
           echo "✅ HTML is valid!"
+
   # CD: Deploy runs on self-hosted runner (your VM)
   deploy:
     needs: test
