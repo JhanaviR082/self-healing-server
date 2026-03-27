@@ -41,15 +41,15 @@ jobs:
       - name: Checkout code on VM
         uses: actions/checkout@v4
 
-      - name: Deploy to web directory
-        run: |
-          echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🚀 Deployment started" | sudo tee -a /var/log/deploy.log
-          sudo cp index.html /var/www/html/
-          
-          if [ -f dashboard.html ]; then
-            sudo cp dashboard.html /var/www/html/
-          fi
-          
-          sudo systemctl reload nginx
-          echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Deployment completed successfully" | sudo tee -a /var/log/deploy.log
-          echo "✅ Deployment completed!"
+- name: Deploy to web directory
+  run: |
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🚀 Deployment started" | sudo tee -a /var/log/deploy.log
+    sudo cp index.html /var/www/html/
+    
+    if [ -f dashboard.html ]; then
+      sudo cp dashboard.html /var/www/html/
+    fi
+    
+    sudo systemctl reload nginx
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Deployment completed successfully" | sudo tee -a /var/log/deploy.log
+    echo "✅ Deployment completed!"
