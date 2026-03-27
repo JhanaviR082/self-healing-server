@@ -8,28 +8,23 @@ jobs:
   # CI: Tests run on GitHub's servers
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Install HTML validator
         run: sudo apt-get install -y tidy
-      
+
       - name: Validate HTML
         run: |
           echo "🧪 Validating HTML (strict mode)..."
-          
-          # Run tidy and capture ALL output
           OUTPUT=$(tidy -e index.html 2>&1)
-          
-          # Check if there are ANY issues (Error OR Warning)
           if echo "$OUTPUT" | grep -q "Error:\|Warning:"; then
             echo "❌ HTML issues found:"
             echo "$OUTPUT"
             exit 1
           fi
-          
           echo "✅ HTML is perfect!"
 
   # CD: Deploy runs on self-hosted runner (your VM)
@@ -41,15 +36,15 @@ jobs:
       - name: Checkout code on VM
         uses: actions/checkout@v4
 
-- name: Deploy to web directory
-  run: |
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🚀 Deployment started" | sudo tee -a /var/log/deploy.log
-    sudo cp index.html /var/www/html/
-    
-    if [ -f dashboard.html ]; then
-      sudo cp dashboard.html /var/www/html/
-    fi
-    
-    sudo systemctl reload nginx
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Deployment completed successfully" | sudo tee -a /var/log/deploy.log
-    echo "✅ Deployment completed!"
+      - name: Deploy to web directory
+        run: |
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🚀 Deployment started" | sudo tee -a /var/log/deploy.log
+          sudo cp index.html /var/www/html/
+          
+          if [ -f dashboard.html ]; then
+            sudo cp dashboard.html /var/www/html/
+          fi
+          
+          sudo systemctl reload nginx
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Deployment completed successfully" | sudo tee -a /var/log/deploy.log
+          echo "✅ Deployment completed!"
