@@ -66,35 +66,35 @@ graph TB
         NGINX[Nginx Server<br/>Port 80]
         
         subgraph WEB["Web Files"]
-            INDEX[index.html<br/>Website]
-            DASH[dashboard.html<br/>Monitoring UI]
-            JSON["JSON Files<br/>current.json · history.json<br/>alerts.json · deploys.json"]
+            INDEX[index.html]
+            DASH[dashboard.html]
+            JSON[JSON Files]
         end
         
         subgraph SCRIPTS["Automation Scripts"]
-            HEALTH[nginx-health-check.sh<br/>Self-Healing · Every Minute]
-            PUSH[push-to-gist.sh<br/>Dual Storage · Every 2 Minutes]
-            DEPLOY[deploy-from-github.sh<br/>CI/CD Deployment]
+            HEALTH[Health Check Script]
+            PUSH[Dual Storage Script]
+            DEPLOY[Deployment Script]
         end
         
         subgraph SERVICES["System Services"]
             CRON[Cron Scheduler]
-            RUNNER[GitHub Self-Hosted Runner]
+            RUNNER[GitHub Runner]
             POSTFIX[Postfix Email]
         end
         
         subgraph LOGS["Log Files"]
-            HEALTH_LOG[/var/log/nginx-health.log]
-            DEPLOY_LOG[/var/log/deploy.log]
+            HEALTH_LOG[Health Log]
+            DEPLOY_LOG[Deploy Log]
         end
     end
 
     subgraph CLOUD["☁️ Cloud Backup"]
-        GIST[GitHub Gist<br/>metrics.json]
+        GIST[GitHub Gist]
         ACTIONS[GitHub Actions]
     end
 
-    U -->|http://localhost:8080| PF
+    U --> PF
     PF --> NGINX
     NGINX --> INDEX
     NGINX --> DASH
@@ -105,87 +105,85 @@ graph TB
     RUNNER --> DEPLOY
     
     HEALTH --> HEALTH_LOG
-    HEALTH -->|Email Alert| POSTFIX
+    HEALTH --> POSTFIX
     HEALTH --> JSON
     
     PUSH --> JSON
-    PUSH -->|Backup| GIST
+    PUSH --> GIST
     
     DEPLOY --> DEPLOY_LOG
-    DEPLOY -->|Updates| INDEX
-    DEPLOY -->|Updates| DASH
+    DEPLOY --> INDEX
+    DEPLOY --> DASH
     
-    ACTIONS -->|Triggers| RUNNER
+    ACTIONS --> RUNNER
     
-    DASH -->|Fetches JSON every 10s| JSON
-    DASH -->|Fallback when VM off| GIST
+    DASH --> JSON
+    DASH --> GIST
 
-    style U fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
-    style NGINX fill:#2196F3,stroke:#0b5e7e,stroke-width:2px,color:#fff
-    style HEALTH fill:#FF9800,stroke:#e65100,stroke-width:2px,color:#fff
-    style GIST fill:#9C27B0,stroke:#6a1b9a,stroke-width:2px,color:#fff
+    style U fill:#4CAF50,stroke:#2E7D32
+    style NGINX fill:#2196F3,stroke:#0b5e7e
+    style HEALTH fill:#FF9800,stroke:#e65100
+    style GIST fill:#9C27B0,stroke:#6a1b9a
 ```
 ## 🔄 CI/CD Pipeline
 
 ```mermaid
 flowchart LR
     subgraph DEV["💻 Developer (Mac)"]
-        A[Edit Code] --> B[git add .]
+        A[Edit Code] --> B[git add]
         B --> C[git commit]
         C --> D[git push]
     end
 
     subgraph GITHUB["🐙 GitHub"]
-        E[Repository<br/>self-healing-server] --> F[GitHub Actions]
-        F --> G[CI: Test Job<br/>Ubuntu Latest]
+        E[Repository] --> F[GitHub Actions]
+        F --> G[Test Job]
         G --> H{HTML Valid?}
-        H -->|No| I[❌ Fail Pipeline]
-        H -->|Yes| J[✅ Proceed]
+        H -->|No| I[Fail]
+        H -->|Yes| J[Proceed]
     end
 
-    subgraph VM["🖥️ Self-Hosted Runner (VM)"]
-        J --> K[CD: Deploy Job]
-        K --> L[Checkout Code]
-        L --> M[Copy files to<br/>/var/www/html/]
-        M --> N[Reload Nginx]
-        N --> O[Log to<br/>/var/log/deploy.log]
+    subgraph VM["🖥️ VM Runner"]
+        J --> K[Deploy Job]
+        K --> L[Copy Files]
+        L --> M[Reload Nginx]
+        M --> N[Log to Deploy Log]
     end
 
     subgraph DASH["📊 Dashboard"]
-        O --> P[Dashboard Shows<br/>Deployment History]
-        M --> Q[Website Updated]
+        N --> P[Show History]
+        L --> Q[Website Updated]
     end
 
-    style A fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
-    style F fill:#24292e,stroke:#000,stroke-width:2px,color:#fff
-    style K fill:#FF9800,stroke:#e65100,stroke-width:2px,color:#fff
-    style O fill:#2196F3,stroke:#0b5e7e,stroke-width:2px,color:#fff
+    style A fill:#4CAF50,stroke:#2E7D32
+    style F fill:#24292e,stroke:#000,color:#fff
+    style K fill:#FF9800,stroke:#e65100
+    style N fill:#2196F3,stroke:#0b5e7e
 ```
 ## 📊 Data Flow
 
 ```mermaid
 flowchart TB
-    subgraph COLLECTION["📈 Data Collection (Every 2 Minutes)"]
+    subgraph COLLECTION["📈 Data Collection"]
         PUSH[push-to-gist.sh]
-        METRICS[Collect Metrics:<br/>CPU · Memory · Disk<br/>Nginx · Cron · Runner · Email<br/>Uptime]
+        METRICS[Collect: CPU, Memory, Disk, Services]
     end
 
-    subgraph LOCAL["💾 Local Storage (Primary)"]
-        direction LR
-        CURR[current.json<br/>Live Metrics]
-        HIST[history.json<br/>500 Points History]
-        ALERTS[alerts.json<br/>Crash Events]
-        DEPLOYS[deploys.json<br/>Deployments]
+    subgraph LOCAL["💾 Local Storage"]
+        CURR[current.json]
+        HIST[history.json]
+        ALERTS[alerts.json]
+        DEPLOYS[deploys.json]
     end
 
-    subgraph BACKUP["☁️ Cloud Backup (GitHub Gist)"]
-        GIST[metrics.json<br/>Same as local<br/>Accessible when VM off]
+    subgraph BACKUP["☁️ Cloud Backup"]
+        GIST[GitHub Gist]
     end
 
-    subgraph DASH["📊 Dashboard (Every 10 Seconds)"]
+    subgraph DASH["📊 Dashboard"]
         HTML[dashboard.html]
-        FETCH[fetchWithFallback()]
-        DISPLAY{Display Data}
+        FETCH[fetch data]
+        DISPLAY[Display]
     end
 
     PUSH --> METRICS
@@ -196,53 +194,46 @@ flowchart TB
     METRICS --> GIST
 
     HTML --> FETCH
-    FETCH -->|Try First| CURR
-    FETCH -->|If VM ON| DISPLAY
-    FETCH -->|If VM OFF| GIST
-    GIST -->|Fallback| DISPLAY
+    FETCH --> CURR
+    FETCH --> GIST
 
-    style PUSH fill:#FF9800,stroke:#e65100,stroke-width:2px,color:#fff
-    style GIST fill:#9C27B0,stroke:#6a1b9a,stroke-width:2px,color:#fff
-    style HTML fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
+    style PUSH fill:#FF9800,stroke:#e65100
+    style GIST fill:#9C27B0,stroke:#6a1b9a
+    style HTML fill:#4CAF50,stroke:#2E7D32
 ```
 ## ⚙️ Self-Healing Mechanism
 
 ```mermaid
 flowchart TD
-    START([Cron: Every Minute]) --> SCRIPT[/usr/local/bin/nginx-health-check.sh]
+    START([Cron: Every Minute]) --> SCRIPT[Health Check Script]
 
-    SCRIPT --> CHECK{curl -I -s http://localhost<br/>grep -q "200 OK"}
+    SCRIPT --> CHECK{Nginx Running?}
 
-    CHECK -->|✅ Yes - Healthy| HEALTHY[Log: Nginx is healthy]
+    CHECK -->|Yes| HEALTHY[Log: Healthy]
     HEALTHY --> END([End])
 
-    CHECK -->|❌ No - Crash| DOWN[Log: Nginx is down! RESTARTING...]
+    CHECK -->|No| DOWN[Log: Nginx Down]
 
-    DOWN --> METRICS[Collect System Metrics<br/>CPU · Memory · Disk · Uptime]
+    DOWN --> METRICS[Collect Metrics]
 
-    METRICS --> EMAIL[Send Professional Email Alert<br/>To: jhanavi020@gmail.com<br/>Subject: 🚨 Server Alert<br/>Body: Metrics + Recovery Report]
+    METRICS --> EMAIL[Send Email Alert]
 
-    EMAIL --> RESTART[systemctl restart nginx]
+    EMAIL --> RESTART[Restart Nginx]
 
-    RESTART --> VERIFY{Verify Restart Success?}
+    RESTART --> SUCCESS[Log: Restarted]
 
-    VERIFY -->|Yes| SUCCESS[Log: Restart completed!]
-    VERIFY -->|No| FAIL[Log: Restart FAILED!]
+    SUCCESS --> UPDATE[Update JSON Files]
 
-    SUCCESS --> UPDATE[Update JSON Files:<br/>alerts.json · history.json]
-
-    UPDATE --> DASH[Dashboard Shows Recovery<br/>Recent Alerts + Live Logs]
+    UPDATE --> DASH[Dashboard Updates]
 
     DASH --> END
 
-    FAIL --> ALERT[Send Failure Alert Email]
-    ALERT --> END
-
-    style CHECK fill:#FF9800,stroke:#e65100,stroke-width:2px,color:#fff
-    style EMAIL fill:#f44336,stroke:#c62828,stroke-width:2px,color:#fff
-    style RESTART fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
-    style DASH fill:#2196F3,stroke:#0b5e7e,stroke-width:2px,color:#fff
+    style CHECK fill:#FF9800,stroke:#e65100
+    style EMAIL fill:#f44336,stroke:#c62828
+    style RESTART fill:#4CAF50,stroke:#2E7D32
+    style DASH fill:#2196F3,stroke:#0b5e7e
 ```
+
 ## 🛠️ Tech Stack
 
 | Category | Technology | Purpose |
