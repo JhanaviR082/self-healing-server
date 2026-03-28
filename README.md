@@ -1,3 +1,10 @@
+I see the issue — your README is getting cut off in the middle. Let me give you the **complete, properly formatted README** that you can copy and paste in one go:
+
+---
+
+## 📝 Complete README.md (Copy This Entirely)
+
+```markdown
 # 🛡️ Self-Healing Server
 
 > A production-grade self-healing Linux server with automated recovery, real-time monitoring, and CI/CD pipeline.
@@ -12,10 +19,11 @@
 - [Data Flow](#-data-flow)
 - [Self-Healing Mechanism](#-self-healing-mechanism)
 - [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
-- [Demo](#-demo)
+- [Quick Start](#-quick-start)
 - [Project Structure](#-project-structure)
 - [Future Improvements](#-future-improvements)
+- [License](#-license)
+- [Contact](#-contact)
 
 ---
 
@@ -23,13 +31,16 @@
 
 This project implements a **self-healing Linux server** that automatically detects and recovers from failures, sends real-time alerts, and provides a live monitoring dashboard. It's designed to minimize downtime and reduce manual intervention — exactly how modern cloud infrastructure operates.
 
-**Key Capabilities:**
-- 🔄 **Auto-restart** Nginx on crash (within 60 seconds)
-- 📧 **Email alerts** with system metrics when failures occur
-- 🚀 **CI/CD pipeline** with GitHub Actions and self-hosted runner
-- 📊 **Live dashboard** with real-time metrics and historical graphs
-- 💾 **Dual storage** (local + GitHub Gist) for 99.9% data availability
-- 🏗️ **Infrastructure as Code** — one command rebuilds everything
+### Key Capabilities
+
+| Capability | Description |
+|------------|-------------|
+| 🔄 **Auto-restart** | Detects Nginx crashes within 60 seconds and restarts automatically |
+| 📧 **Email alerts** | Sends detailed alerts with system metrics when failures occur |
+| 🚀 **CI/CD pipeline** | Push to GitHub → auto-deploy to server via self-hosted runner |
+| 📊 **Live dashboard** | Real-time metrics, historical graphs, crash alerts, deployment history |
+| 💾 **Dual storage** | Local files for fast access + GitHub Gist backup for offline viewing |
+| 🏗️ **Infrastructure as Code** | Single `setup.sh` script rebuilds entire server from scratch |
 
 ---
 
@@ -66,12 +77,12 @@ graph TB
         subgraph WEB["Web Files"]
             INDEX[index.html<br/>Website]
             DASH[dashboard.html<br/>Monitoring UI]
-            JSON["JSON Files<br/>current.json<br/>history.json<br/>alerts.json<br/>deploys.json"]
+            JSON["JSON Files<br/>current.json · history.json<br/>alerts.json · deploys.json"]
         end
         
         subgraph SCRIPTS["Automation Scripts"]
-            HEALTH[nginx-health-check.sh<br/>Self-Healing<br/>Every Minute]
-            PUSH[push-to-gist.sh<br/>Dual Storage<br/>Every 2 Minutes]
+            HEALTH[nginx-health-check.sh<br/>Self-Healing · Every Minute]
+            PUSH[push-to-gist.sh<br/>Dual Storage · Every 2 Minutes]
             DEPLOY[deploy-from-github.sh<br/>CI/CD Deployment]
         end
         
@@ -122,7 +133,13 @@ graph TB
     style NGINX fill:#2196F3,stroke:#0b5e7e,stroke-width:2px,color:#fff
     style HEALTH fill:#FF9800,stroke:#e65100,stroke-width:2px,color:#fff
     style GIST fill:#9C27B0,stroke:#6a1b9a,stroke-width:2px,color:#fff
+```
 
+---
+
+## 🔄 CI/CD Pipeline
+
+```mermaid
 flowchart LR
     subgraph DEV["💻 Developer (Mac)"]
         A[Edit Code] --> B[git add .]
@@ -155,7 +172,13 @@ flowchart LR
     style F fill:#24292e,stroke:#000,stroke-width:2px,color:#fff
     style K fill:#FF9800,stroke:#e65100,stroke-width:2px,color:#fff
     style O fill:#2196F3,stroke:#0b5e7e,stroke-width:2px,color:#fff
+```
 
+---
+
+## 📊 Data Flow
+
+```mermaid
 flowchart TB
     subgraph COLLECTION["📈 Data Collection (Every 2 Minutes)"]
         PUSH[push-to-gist.sh]
@@ -196,7 +219,13 @@ flowchart TB
     style PUSH fill:#FF9800,stroke:#e65100,stroke-width:2px,color:#fff
     style GIST fill:#9C27B0,stroke:#6a1b9a,stroke-width:2px,color:#fff
     style HTML fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
+```
 
+---
+
+## ⚙️ Self-Healing Mechanism
+
+```mermaid
 flowchart TD
     START([Cron: Every Minute]) --> SCRIPT[/usr/local/bin/nginx-health-check.sh]
 
@@ -231,6 +260,9 @@ flowchart TD
     style EMAIL fill:#f44336,stroke:#c62828,stroke-width:2px,color:#fff
     style RESTART fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
     style DASH fill:#2196F3,stroke:#0b5e7e,stroke-width:2px,color:#fff
+```
+
+---
 
 ## 🛠️ Tech Stack
 
@@ -246,6 +278,8 @@ flowchart TD
 | **Storage** | Local JSON + GitHub Gist | Dual storage for metrics |
 | **Infrastructure as Code** | Bash (`setup.sh`) | One-command rebuild |
 | **Virtualization** | VirtualBox | VM with NAT + port forwarding |
+
+---
 
 ## 🚀 Quick Start
 
@@ -305,6 +339,9 @@ git push
 
 # Watch dashboard for deployment history
 ```
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -337,7 +374,11 @@ Your VM (/usr/local/bin/)
 Your VM (/var/log/)
 ├── nginx-health.log            # Health check logs
 └── deploy.log                  # Deployment logs
-```## 🔮 Future Improvements
+```
+
+---
+
+## 🔮 Future Improvements
 
 - [ ] **GitHub App Authentication** — Auto-renewing tokens (no expiration)
 - [ ] **Multi-Server Support** — Monitor multiple VMs from one dashboard
@@ -346,6 +387,27 @@ Your VM (/var/log/)
 - [ ] **Predictive Analytics** — AI-based failure prediction
 - [ ] **Mobile App / PWA** — Installable dashboard on phone
 - [ ] **Ansible Playbook** — Infrastructure as Code with Ansible
+
+---
+
 ## 📄 License
 
 This project is open source and available under the MIT License.
+
+---
+
+## 📬 Contact
+
+**Jhanavi R** — [GitHub](https://github.com/JhanaviR082)
+
+**Project Link:** [https://github.com/JhanaviR082/self-healing-server](https://github.com/JhanaviR082/self-healing-server)
+
+**Live Dashboard:** `http://localhost:8080/dashboard.html` (when VM is running)
+
+---
+
+*Built to demonstrate DevOps, SRE, and Cloud Engineering skills.*
+```
+
+---
+
