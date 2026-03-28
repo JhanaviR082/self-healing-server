@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self-Healing Server Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+
+/* ══════════════════════════════════════════
+   TOKENS — DARK ONLY
+══════════════════════════════════════════ */
+:root {
+    --bg:               #1c1c1e;
+    --bg-secondary:     #2c2c2e;
+    --bg-tertiary:      #3a3a3c;
+    --glass-bg:         rgba(44, 44, 46, 0.72);
+    --glass-border:     rgba(255, 255, 255, 0.08);
+    --glass-hover:      rgba(58, 58, 60, 0.80);
+    --glass-shine:      rgba(255, 255, 255, 0.12);
+    --text-p:           rgba(255, 255, 255, 0.92);
+    --text-s:           rgba(255, 255, 255, 0.62);
+    --text-t:           rgba(255, 255, 255, 0.36);
+    --divider:          rgba(255, 255, 255, 0.07);
+    --green:            #34C759;
+    --green-dim:        rgba(52, 199, 89, 0.15);
+    --orange:           #FF9F0A;
+    --orange-dim:       rgba(255, 159, 10, 0.15);
+    --red:              #FF453A;
+    --red-dim:          rgba(255, 69, 58, 0.15);
+    --blue:             #0A84FF;
+    --blue-dim:         rgba(10, 132, 255, 0.15);
+    --chart-tick:       rgba(255, 255, 255, 0.28);
+    --chart-grid:       rgba(255, 255, 255, 0.05);
+    --chart-legend:     rgba(255, 255, 255, 0.50);
+    --scroll-thumb:     rgba(255, 255, 255, 0.10);
+    --shadow-card:      0 1px 3px rgba(0,0,0,0.40), 0 4px 16px rgba(0,0,0,0.28);
+    --shadow-hover:     0 2px 8px rgba(0,0,0,0.45), 0 8px 24px rgba(0,0,0,0.32);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    background: var(--bg);
+    color: var(--text-p);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ══════════════════════════════════════════
+   SPLASH — macOS STYLE
+══════════════════════════════════════════ */
+#splash {
+    position: fixed;
+    inset: 0;
+    background: #161618;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.8s cubic-bezier(0.4,0,0.2,1), visibility 0.8s ease;
+}
+#splash.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Subtle noise texture overlay */
+#splash::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Radial glow behind gears */
+#splash::after {
+    content: '';
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(52,199,89,0.06) 0%, transparent 72%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.splash-center {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+}
+
+/* ── GEAR CLUSTER ── */
+.gear-cluster {
+    position: relative;
+    width: 160px;
+    height: 160px;
+}
+
+.gear-wrap {
+    position: absolute;
+}
+
+/* Large center gear */
+.gear-wrap.large {
+    width: 100px;
+    height: 100px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.gear-wrap.large svg {
+    animation: spin-cw 4s linear infinite;
+}
+
+/* Small top-right gear */
+.gear-wrap.small-tr {
+    width: 52px;
+    height: 52px;
+    top: 6px;
+    right: 0;
+}
+.gear-wrap.small-tr svg {
+    animation: spin-ccw 2.18s linear infinite;
+}
+
+/* Small bottom-left gear */
+.gear-wrap.small-bl {
+    width: 52px;
+    height: 52px;
+    bottom: 6px;
+    left: 0;
+}
+.gear-wrap.small-bl svg {
+    animation: spin-ccw 2.18s linear infinite;
+}
+
+@keyframes spin-cw  { from { transform: rotate(0deg);   } to { transform: rotate(360deg);  } }
+@keyframes spin-ccw { from { transform: rotate(0deg);   } to { transform: rotate(-360deg); } }
+
+/* ── TEXT BLOCK ── */
+.splash-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: fadeSlideUp 0.7s cubic-bezier(0.4,0,0.2,1) 0.4s forwards;
+}
+
+.splash-title {
+    font-family: -apple-system, 'SF Pro Display', 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.90);
+    letter-spacing: -0.02em;
+}
+
+.splash-subtitle {
+    font-family: -apple-system, 'SF Pro Text', 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.36);
+    letter-spacing: 0.01em;
+}
+
+/* ── PROGRESS ── */
+.splash-progress-wrap {
+    width: 180px;
+    opacity: 0;
+    animation: fadeSlideUp 0.6s cubic-bezier(0.4,0,0.2,1) 0.7s forwards;
+}
+
+.splash-progress-track {
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.splash-progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #28a84a, #34C759);
+    width: 0%;
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+}
+
+/* Shimmer on progress bar */
+.splash-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -60%; right: 0; bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+    animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%   { left: -60%; }
+    100% { left: 120%; }
+}
+
+.splash-progress-label {
+    text-align: center;
+    margin-top: 14px;
+    font-family: -apple-system, 'SF Pro Text', 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 0.04em;
+    min-height: 16px;
+    transition: opacity 0.3s ease;
+}
+
+/* ── STATUS DOTS ── */
+.splash-dots {
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    animation: fadeSlideUp 0.6s cubic-bezier(0.4,0,0.2,1) 0.9s forwards;
+}
+
+.splash-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    transition: background 0.4s ease, transform 0.25s ease;
+}
+.splash-dot.active {
+    background: #34C759;
+    transform: scale(1.25);
+}
+.splash-dot.done {
+    background: rgba(52,199,89,0.45);
+    transform: scale(1);
+}
+
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* ── SYSTEM READY flash ── */
+#splash-ready {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+}
+#splash-ready.show {
+    animation: readyFlash 0.9s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes readyFlash {
+    0%  { opacity: 0; }
+    15% { opacity: 1; }
+    60% { opacity: 1; }
+    100%{ opacity: 0; }
+}
+
+.splash-ready-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transform: scale(0.95);
+    animation: readyScale 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.1s forwards;
+    opacity: 0;
+}
+@keyframes readyScale {
+    to { transform: scale(1); opacity: 1; }
+}
+
+.splash-ready-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(52,199,89,0.15);
+    border: 1.5px solid rgba(52,199,89,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.splash-ready-text {
+    font-family: -apple-system, 'SF Pro Display', 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(52,199,89,0.85);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+/* ══════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════ */
+.main {
+    position: relative;
+    z-index: 1;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 28px 24px 40px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--divider);
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; box-shadow: var(--shadow-card);
+}
+.header-title { font-size: 14px; font-weight: 600; color: var(--text-p); letter-spacing: -0.01em; }
+.header-sub   { font-size: 11px; color: var(--text-t); margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+
+.live-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 20px;
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    font-size: 11px; font-weight: 500; color: var(--text-s);
+    letter-spacing: 0.05em; box-shadow: var(--shadow-card);
+}
+.status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); flex-shrink: 0;
+    animation: macos-pulse 2.4s ease-in-out infinite;
+}
+.status-dot.offline { background: var(--red); }
+@keyframes macos-pulse { 0%,100%{opacity:1;} 50%{opacity:0.45;} }
+
+#timestamp { font-size: 11px; color: var(--text-t); font-weight: 400; }
+
+.card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    padding: 20px 22px;
+    position: relative; overflow: hidden;
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+    animation: fadeUp 0.45s cubic-bezier(0.4,0,0.2,1) both;
+}
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 16px; right: 16px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--glass-shine) 50%, transparent);
+    pointer-events: none;
+}
+.card:hover {
+    background: var(--glass-hover);
+    border-color: var(--glass-shine);
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-1px);
+}
+
+.card-label {
+    font-size: 11px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.10em;
+    color: var(--text-t); margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+}
+.card-label::after { content: ''; flex: 1; height: 1px; background: var(--divider); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
+.grid-3 .card:nth-child(1){animation-delay:.04s;}
+.grid-3 .card:nth-child(2){animation-delay:.09s;}
+.grid-3 .card:nth-child(3){animation-delay:.14s;}
+.grid-2 .card:nth-child(1){animation-delay:.19s;}
+.grid-2 .card:nth-child(2){animation-delay:.24s;}
+.grid-1 .card             {animation-delay:.29s;}
+
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 12px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 12px; }
+.grid-1 { margin-bottom: 12px; }
+@media(max-width:1100px){.grid-3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:700px) {.grid-3,.grid-2{grid-template-columns:1fr;}}
+
+.status-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+}
+.status-green  { background: var(--green-dim);  color: var(--green);  border: 1px solid rgba(52,199,89,0.18);  }
+.status-red    { background: var(--red-dim);    color: var(--red);    border: 1px solid rgba(255,69,58,0.18);  }
+.status-yellow { background: var(--orange-dim); color: var(--orange); border: 1px solid rgba(255,159,10,0.18); }
+
+.meta-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--divider); font-size: 12px;
+}
+.meta-row:last-child { border-bottom: none; }
+.meta-key { color: var(--text-t); font-weight: 400; }
+.meta-val { color: var(--text-s); font-weight: 500; }
+
+.service-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0; border-bottom: 1px solid var(--divider); font-size: 12px;
+}
+.service-row:last-child { border-bottom: none; }
+.service-name { color: var(--text-s); }
+
+.resource-item { margin-bottom: 14px; }
+.resource-item:last-child { margin-bottom: 0; }
+.resource-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.resource-label { color: var(--text-t); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; font-weight: 500; }
+.resource-value { color: var(--text-p); font-weight: 600; font-size: 13px; }
+
+.bar { height: 4px; background: var(--divider); border-radius: 4px; overflow: hidden; }
+.bar-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 0.9s cubic-bezier(0.4,0,0.2,1);
+}
+.bar-green  { background: var(--green);  opacity: 0.85; }
+.bar-yellow { background: var(--orange); opacity: 0.85; }
+.bar-red    { background: var(--red);    opacity: 0.85; }
+
+.chart-container { height: 175px; margin-top: 8px; position: relative; }
+
+.log-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--divider);
+    font-size: 11px; line-height: 1.6;
+}
+.log-item:last-child { border-bottom: none; }
+.log-time { color: var(--text-t); white-space: nowrap; padding-top: 1px; min-width: 80px; font-size: 10.5px; }
+.log-msg  { color: var(--text-s); }
+.log-dot  { width: 5px; height: 5px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; background: var(--bg-tertiary); }
+
+.logs-container {
+    max-height: 260px; overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent;
+}
+.logs-container::-webkit-scrollbar { width: 3px; }
+.logs-container::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 2px; }
+
+.footer {
+    text-align: center; margin-top: 28px; padding-top: 18px;
+    border-top: 1px solid var(--divider);
+    font-size: 10px; color: var(--text-t); letter-spacing: 0.06em;
+}
+
+    </style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+    <!-- System ready flash overlay -->
+    <div id="splash-ready">
+        <div class="splash-ready-inner">
+            <div class="splash-ready-icon">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                    <path d="M4 11.5L9 16.5L18 7" stroke="#34C759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="splash-ready-text">System Online</div>
+        </div>
+    </div>
+
+    <div class="splash-center">
+
+        <!-- Gear cluster -->
+        <div class="gear-cluster">
+
+            <!-- Small top-right -->
+            <div class="gear-wrap small-tr">
+                <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M26 2L28.6 8.2C29.5 8.5 30.3 8.9 31.1 9.4L37.6 7.4L44.6 14.4L42.6 20.9C43.1 21.7 43.5 22.5 43.8 23.4L50 26L50 36L43.8 38.6C43.5 39.5 43.1 40.3 42.6 41.1L44.6 47.6L37.6 54.6L31.1 52.6C30.3 53.1 29.5 53.5 28.6 53.8L26 60L16 60L13.4 53.8C12.5 53.5 11.7 53.1 10.9 52.6L4.4 54.6L-2.6 47.6L-0.6 41.1C-1.1 40.3 -1.5 39.5 -1.8 38.6L-8 36L-8 26L-1.8 23.4C-1.5 22.5 -1.1 21.7 -0.6 20.9L-2.6 14.4L4.4 7.4L10.9 9.4C11.7 8.9 12.5 8.5 13.4 8.2L16 2Z" fill="none"/>
+                    <!-- Simpler gear path for small gear -->
+                    <g transform="translate(26,26)">
+                        <circle r="7" fill="rgba(52,199,89,0.08)" stroke="rgba(52,199,89,0.30)" stroke-width="1.2"/>
+                        <circle r="3.5" fill="rgba(52,199,89,0.18)" stroke="rgba(52,199,89,0.40)" stroke-width="1"/>
+                        <!-- Teeth -->
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(0)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(45)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(90)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(135)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(180)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(225)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(270)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(315)"/>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Large center gear (SVG canvas approach) -->
+            <div class="gear-wrap large">
+                <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="translate(50,50)">
+                        <!-- Outer ring -->
+                        <circle r="34" fill="rgba(52,199,89,0.05)" stroke="rgba(52,199,89,0.18)" stroke-width="1.5"/>
+                        <!-- Inner ring -->
+                        <circle r="22" fill="rgba(52,199,89,0.08)" stroke="rgba(52,199,89,0.25)" stroke-width="1.2"/>
+                        <!-- Hub -->
+                        <circle r="10" fill="rgba(52,199,89,0.14)" stroke="rgba(52,199,89,0.40)" stroke-width="1.5"/>
+                        <circle r="5" fill="rgba(52,199,89,0.30)" stroke="rgba(52,199,89,0.60)" stroke-width="1"/>
+                        <!-- 12 teeth -->
+                        <rect x="-4" y="-44" width="8" height="10" rx="2" fill="rgba(52,199,89,0.30)" transform="rotate(0)"/>
+                        <rect x="-4" y="-44" width="8" height="10" rx="2" fill="rgba(52,199,89,0.30)" transform="rotate(30)"/>
+                        <rect x="-4" y="-44" width="8" height="10" rx="2" fill="rgba(52,199,89,0.30)" transform="rotate(60)"/>
+                        <rect x="-4" y="-44" width="8" height="10" rx="2" fill="rgba(52,199,89,0.30)" transform="rotate(90)"/>
+                        <rect x="-4" y="-44" width="8" height="10" rx="2" fill="rgba(52,199,89,0.30)" transform="rotate(120)"/>
+                        <rect x="-4" y="-44" width="8" height="10" rx="2" fill="rgba(52,199,89,0.30)" transform="rotate(150)"/>
+                        <rect x="-4" y="-44" width="8" height="10" rx="2" fill="rgba(52,199,89,0.30)" transform="rotate(180)"/>
+                        <rect x="-4" y="-44" width="8" height="10" rx="2" fill="rgba(52,199,89,0.30)" transform="rotate(210)"/>
+                        <rect x="-4" y="-44" width="8" height="10" rx="2" fill="rgba(52,199,89,0.30)" transform="rotate(240)"/>
+                        <rect x="-4" y="-44" width="8" height="10" rx="2" fill="rgba(52,199,89,0.30)" transform="rotate(270)"/>
+                        <rect x="-4" y="-44" width="8" height="10" rx="2" fill="rgba(52,199,89,0.30)" transform="rotate(300)"/>
+                        <rect x="-4" y="-44" width="8" height="10" rx="2" fill="rgba(52,199,89,0.30)" transform="rotate(330)"/>
+                        <!-- Spoke lines -->
+                        <line x1="0" y1="-22" x2="0" y2="-10" stroke="rgba(52,199,89,0.22)" stroke-width="1.2"/>
+                        <line x1="0" y1="-22" x2="0" y2="-10" stroke="rgba(52,199,89,0.22)" stroke-width="1.2" transform="rotate(60)"/>
+                        <line x1="0" y1="-22" x2="0" y2="-10" stroke="rgba(52,199,89,0.22)" stroke-width="1.2" transform="rotate(120)"/>
+                        <line x1="0" y1="-22" x2="0" y2="-10" stroke="rgba(52,199,89,0.22)" stroke-width="1.2" transform="rotate(180)"/>
+                        <line x1="0" y1="-22" x2="0" y2="-10" stroke="rgba(52,199,89,0.22)" stroke-width="1.2" transform="rotate(240)"/>
+                        <line x1="0" y1="-22" x2="0" y2="-10" stroke="rgba(52,199,89,0.22)" stroke-width="1.2" transform="rotate(300)"/>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Small bottom-left -->
+            <div class="gear-wrap small-bl">
+                <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="translate(26,26)">
+                        <circle r="7" fill="rgba(52,199,89,0.08)" stroke="rgba(52,199,89,0.30)" stroke-width="1.2"/>
+                        <circle r="3.5" fill="rgba(52,199,89,0.18)" stroke="rgba(52,199,89,0.40)" stroke-width="1"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(0)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(45)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(90)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(135)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(180)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(225)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(270)"/>
+                        <rect x="-2.5" y="-13" width="5" height="4" rx="1" fill="rgba(52,199,89,0.35)" transform="rotate(315)"/>
+                    </g>
+                </svg>
+            </div>
+
+        </div>
+
+        <!-- Title + subtitle -->
+        <div class="splash-text">
+            <div class="splash-title">Self-Healing Server</div>
+            <div class="splash-subtitle">Initialising system components</div>
+        </div>
+
+        <!-- Progress -->
+        <div class="splash-progress-wrap">
+            <div class="splash-progress-track">
+                <div class="splash-progress-fill" id="splash-bar"></div>
+            </div>
+            <div class="splash-progress-label" id="splash-label">Loading...</div>
+        </div>
+
+        <!-- Status dots -->
+        <div class="splash-dots" id="splash-dots">
+            <div class="splash-dot" id="dot-0"></div>
+            <div class="splash-dot" id="dot-1"></div>
+            <div class="splash-dot" id="dot-2"></div>
+            <div class="splash-dot" id="dot-3"></div>
+            <div class="splash-dot" id="dot-4"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="main" id="main-content" style="opacity:0;transition:opacity 0.7s ease;">
+
+    <div class="header">
+        <div class="header-left">
+            <div class="logo-mark">⚙</div>
+            <div>
+                <div class="header-title">Self-Healing Server</div>
+                <div class="header-sub">Auto-restart · Email alerts · CI/CD · Live metrics · Dual storage</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="live-pill">
+                <div class="status-dot" id="status-dot"></div>
+                LIVE
+            </div>
+            <span id="timestamp"></span>
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="card">
+            <div class="card-label">System Status</div>
+            <div id="system-status" class="status-badge status-green">● Healthy</div>
+            <div style="margin-top:16px;">
+                <div class="meta-row"><span class="meta-key">Uptime</span><span class="meta-val" id="uptime">—</span></div>
+                <div class="meta-row"><span class="meta-key">Last Sync</span><span class="meta-val" id="last-update">—</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Services</div>
+            <div class="service-row"><span class="service-name">Nginx</span><span id="nginx-status">—</span></div>
+            <div class="service-row"><span class="service-name">Cron</span><span id="cron-status">—</span></div>
+            <div class="service-row"><span class="service-name">GitHub Runner</span><span id="runner-status">—</span></div>
+            <div class="service-row"><span class="service-name">Email</span><span id="email-status">—</span></div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Resources</div>
+            <div class="resource-item">
+                <div class="resource-header"><span class="resource-label">CPU</span><span class="resource-value" id="cpu-val">—</span></div>
+                <div class="bar"><div class="bar-fill bar-green" id="cpu-bar" style="width:0%"></div></div>
+            </div>
+            <div class="resource-item">
+                <div class="resource-header"><span class="resource-label">Memory</span><span class="resource-value" id="mem-val">—</span></div>
+                <div class="bar"><div class="bar-fill bar-green" id="mem-bar" style="width:0%"></div></div>
+            </div>
+            <div class="resource-item">
+                <div class="resource-header"><span class="resource-label">Disk</span><span class="resource-value" id="disk-val">—</span></div>
+                <div class="bar"><div class="bar-fill bar-green" id="disk-bar" style="width:0%"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-label">Uptime History</div>
+            <div class="chart-container"><canvas id="uptime-chart"></canvas></div>
+        </div>
+        <div class="card">
+            <div class="card-label">CPU &amp; Memory History</div>
+            <div class="chart-container"><canvas id="metrics-chart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-label">Recent Alerts</div>
+            <div id="alerts-list"><div class="log-item"><span class="log-msg" style="color:var(--text-t)">No alerts</span></div></div>
+        </div>
+        <div class="card">
+            <div class="card-label">Deployment History</div>
+            <div id="deploys-list"><div class="log-item"><span class="log-msg" style="color:var(--text-t)">No deployments</span></div></div>
+        </div>
+    </div>
+
+    <div class="grid-1">
+        <div class="card">
+            <div class="card-label">Live Logs</div>
+            <div id="logs-list" class="logs-container">
+                <div class="log-item"><span class="log-msg" style="color:var(--text-t)">Awaiting log stream...</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">Refreshes every 10 s &nbsp;·&nbsp; Sampled every minute &nbsp;·&nbsp; Local + Gist dual storage</div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   SPLASH — macOS BOOT SEQUENCE
+══════════════════════════════════════════ */
+(function() {
+    const bar    = document.getElementById('splash-bar');
+    const label  = document.getElementById('splash-label');
+    const dots   = document.querySelectorAll('.splash-dot');
+
+    const steps = [
+        { pct: 18,  label: 'Mounting filesystems…',       dot: 0 },
+        { pct: 36,  label: 'Starting services…',          dot: 1 },
+        { pct: 54,  label: 'Arming watchdog…',            dot: 2 },
+        { pct: 72,  label: 'Syncing dual storage…',       dot: 3 },
+        { pct: 90,  label: 'Verifying network…',          dot: 4 },
+        { pct: 100, label: 'Ready.',                       dot: -1 },
+    ];
+
+    // Timing: each step fires every ~420ms so total is ~2.5s
+    steps.forEach((step, i) => {
+        setTimeout(() => {
+            bar.style.width = step.pct + '%';
+            label.textContent = step.label;
+
+            // Mark previous dots done, current active
+            dots.forEach((d, di) => {
+                if (di < step.dot)      { d.classList.remove('active'); d.classList.add('done'); }
+                else if (di === step.dot) { d.classList.add('active'); d.classList.remove('done'); }
+            });
+        }, i * 420);
+    });
+
+    // All dots done
+    setTimeout(() => {
+        dots.forEach(d => { d.classList.remove('active'); d.classList.add('done'); });
+    }, steps.length * 420 + 100);
+
+    // System ready flash
+    setTimeout(() => {
+        document.getElementById('splash-ready').classList.add('show');
+    }, steps.length * 420 + 300);
+
+    // Dismiss
+    setTimeout(() => {
+        document.getElementById('splash').classList.add('hidden');
+        document.getElementById('main-content').style.opacity = '1';
+    }, steps.length * 420 + 1100);
+})();
+
+/* ══════════════════════════════════════════
+   DASHBOARD JS (UNCHANGED)
+══════════════════════════════════════════ */
+let charts = {};
+
+const numState = {};
+function animateNumber(id, target, suffix = '%', duration = 650) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const from      = numState[id] !== undefined ? numState[id] : target;
+    const startTime = performance.now();
+    const ease      = t => t < .5 ? 2*t*t : -1+(4-2*t)*t;
+    function step(now) {
+        const p   = Math.min((now - startTime) / duration, 1);
+        const val = Math.round(from + (target - from) * ease(p));
+        el.textContent = val + suffix;
+        numState[id]   = val;
+        if (p < 1) requestAnimationFrame(step);
+        else numState[id] = target;
+    }
+    requestAnimationFrame(step);
+}
+
+const GITHUB_USER       = "JhanaviR082";
+const GIST_ID           = "e4ec5ee522b0b5f2872d86f8adab8100";
+const LOCAL_URL         = "http://localhost:8080/current.json";
+const LOCAL_HISTORY_URL = "http://localhost:8080/history.json";
+const LOCAL_DEPLOYS_URL = "http://localhost:8080/deploys.json";
+const LOCAL_ALERTS_URL  = "http://localhost:8080/alerts.json";
+const GIST_URL          = `https://gist.githubusercontent.com/${GITHUB_USER}/${GIST_ID}/raw/metrics.json`;
+
+let historyData = [];
+
+function getColor(value) {
+    if (value > 80) return 'bar-red';
+    if (value > 60) return 'bar-yellow';
+    return 'bar-green';
+}
+
+function svcBadge(ok, label) {
+    const cls = ok ? 'status-green' : 'status-red';
+    return `<span class="status-badge ${cls}" style="padding:3px 10px;font-size:11px;">● ${label}</span>`;
+}
+
+async function fetchWithFallback() {
+    try {
+        const [currentRes, historyRes, alertsRes, deploysRes] = await Promise.all([
+            fetch(LOCAL_URL          + '?t=' + Date.now()),
+            fetch(LOCAL_HISTORY_URL  + '?t=' + Date.now()),
+            fetch(LOCAL_ALERTS_URL   + '?t=' + Date.now()),
+            fetch(LOCAL_DEPLOYS_URL  + '?t=' + Date.now())
+        ]);
+        const currentData = await currentRes.json();
+        const historyJson = await historyRes.json();
+        const alerts      = await alertsRes.json();
+        const deploys     = await deploysRes.json();
+        return {
+            current:     currentData,
+            historyData: historyJson.history || [],
+            logs:        historyJson.logs    || [],
+            deploys, alerts, source: 'local'
+        };
+    } catch (e) {
+        console.log('Local fetch failed:', e);
+        const response = await fetch(GIST_URL + '?t=' + Date.now());
+        const data = await response.json();
+        return {
+            current:     data,
+            historyData: data.history  || [],
+            logs:        data.logs     || [],
+            deploys:     data.deploys  || [],
+            alerts:      data.alerts   || [],
+            source: 'gist'
+        };
+    }
+}
+
+async function updateDashboard() {
+    try {
+        const { current: currentData, historyData: fetchedHistory, logs: fetchedLogs,
+                deploys: fetchedDeploys, alerts: fetchedAlerts, source } = await fetchWithFallback();
+
+        historyData = fetchedHistory;
+
+        const current = source === 'local' ? currentData : (currentData.current || {});
+        const alerts  = fetchedAlerts  || [];
+        const deploys = fetchedDeploys || [];
+        const logs    = fetchedLogs    || [];
+
+        console.log('Alerts:', alerts);
+        console.log('Deploys:', deploys);
+        console.log(`Data source: ${source}`);
+
+        const lastUpdate         = new Date(current.timestamp);
+        const secondsSinceUpdate = (new Date() - lastUpdate) / 1000;
+        const isOnline           = secondsSinceUpdate < 120;
+
+        const dot       = document.getElementById('status-dot');
+        const sysStatus = document.getElementById('system-status');
+        if (!isOnline) {
+            dot.className       = 'status-dot offline';
+            sysStatus.innerHTML = '● Offline';
+            sysStatus.className = 'status-badge status-red';
+        } else if (current.cpu > 80 || current.memory > 85) {
+            dot.className       = 'status-dot';
+            sysStatus.innerHTML = '● Degraded';
+            sysStatus.className = 'status-badge status-yellow';
+        } else {
+            dot.className       = 'status-dot';
+            sysStatus.innerHTML = '● Healthy';
+            sysStatus.className = 'status-badge status-green';
+        }
+
+        document.getElementById('uptime').innerHTML      = current.uptime || '—';
+        document.getElementById('last-update').innerHTML = current.timestamp
+            ? new Date(current.timestamp).toLocaleString() : '—';
+
+        document.getElementById('nginx-status').innerHTML  = svcBadge(current.nginx   === 'active',     'Running');
+        document.getElementById('cron-status').innerHTML   = svcBadge(current.cron    === 'active',     'Active');
+        document.getElementById('runner-status').innerHTML = svcBadge(current.runner  === 'online',     'Online');
+        document.getElementById('email-status').innerHTML  = svcBadge(current.email   === 'configured', 'Configured');
+
+        if (current.cpu !== undefined) {
+            animateNumber('cpu-val',  current.cpu);
+            animateNumber('mem-val',  current.memory);
+            animateNumber('disk-val', current.disk);
+            document.getElementById('cpu-bar').style.width  = current.cpu    + '%';
+            document.getElementById('cpu-bar').className    = 'bar-fill ' + getColor(current.cpu);
+            document.getElementById('mem-bar').style.width  = current.memory + '%';
+            document.getElementById('mem-bar').className    = 'bar-fill ' + getColor(current.memory);
+            document.getElementById('disk-bar').style.width = current.disk   + '%';
+            document.getElementById('disk-bar').className   = 'bar-fill ' + getColor(current.disk);
+        }
+
+        const alertsContainer = document.getElementById('alerts-list');
+        if (!alerts || alerts.length === 0) {
+            alertsContainer.innerHTML = '<div class="log-item"><div class="log-dot"></div><span class="log-msg" style="color:var(--text-t)">No recent alerts</span></div>';
+        } else {
+            alertsContainer.innerHTML = alerts.slice(-5).map(a => `
+                <div class="log-item">
+                    <div class="log-dot" style="background:var(--orange);"></div>
+                    <span class="log-time">${a.timestamp || ''}</span>
+                    <span class="log-msg">${a.message || ''}</span>
+                </div>`).join('');
+        }
+
+        const deploysContainer = document.getElementById('deploys-list');
+        if (!deploys || deploys.length === 0) {
+            deploysContainer.innerHTML = '<div class="log-item"><div class="log-dot"></div><span class="log-msg" style="color:var(--text-t)">No deployments yet</span></div>';
+        } else {
+            deploysContainer.innerHTML = deploys.slice(-5).map(d => `
+                <div class="log-item">
+                    <div class="log-dot" style="background:var(--green);"></div>
+                    <span class="log-time">${d.timestamp || ''}</span>
+                    <span class="log-msg">${d.message || ''}</span>
+                </div>`).join('');
+        }
+
+        const logsContainer = document.getElementById('logs-list');
+        if (!logs || logs.length === 0) {
+            logsContainer.innerHTML = '<div class="log-item"><div class="log-dot"></div><span class="log-msg" style="color:var(--text-t)">Awaiting log stream...</span></div>';
+        } else {
+            logsContainer.innerHTML = logs.slice(-15).map(l => `
+                <div class="log-item">
+                    <div class="log-dot"></div>
+                    <span class="log-time">${l.timestamp || ''}</span>
+                    <span class="log-msg">${l.message || ''}</span>
+                </div>`).join('');
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+
+        updateCharts();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        document.getElementById('system-status').innerHTML = '● Error';
+        document.getElementById('system-status').className = 'status-badge status-red';
+    }
+}
+
+function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function updateCharts() {
+    if (!historyData.length) return;
+    const points     = historyData.slice(-100);
+    const labels     = points.map(p => new Date(p.timestamp).toLocaleTimeString());
+    const uptimeData = points.map(p => p.nginx === 'active' ? 1 : 0);
+
+    const tick   = cssVar('--chart-tick');
+    const grid   = cssVar('--chart-grid');
+    const legend = cssVar('--chart-legend');
+    const green  = cssVar('--green');
+    const blue   = cssVar('--blue');
+
+    const base = {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: {
+                ticks: { color: tick, font: { size: 9, family: 'Inter, -apple-system, sans-serif' }, maxTicksLimit: 8 },
+                grid:  { color: grid }, border: { display: false }
+            },
+            y: {
+                ticks: { color: tick, font: { size: 9, family: 'Inter, -apple-system, sans-serif' } },
+                grid:  { color: grid }, border: { display: false }
+            }
+        },
+        elements: { point: { radius: 0, hoverRadius: 3 }, line: { tension: 0.42 } }
+    };
+
+    if (charts.uptime)  charts.uptime.destroy();
+    if (charts.metrics) charts.metrics.destroy();
+
+    const uptimeCtx = document.getElementById('uptime-chart').getContext('2d');
+    charts.uptime = new Chart(uptimeCtx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Server Status',
+                data: uptimeData,
+                borderColor: green,
+                backgroundColor: (ctx) => {
+                    const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, ctx.chart.height);
+                    g.addColorStop(0, green + '22');
+                    g.addColorStop(1, green + '00');
+                    return g;
+                },
+                fill: true, stepped: true, borderWidth: 1.5
+            }]
+        },
+        options: {
+            ...base,
+            scales: {
+                ...base.scales,
+                y: {
+                    ...base.scales.y,
+                    min: 0, max: 1,
+                    ticks: {
+                        color: tick, font: { size: 9, family: 'Inter, -apple-system, sans-serif' },
+                        callback: v => v === 1 ? 'Online' : 'Offline'
+                    }
+                }
+            }
+        }
+    });
+
+    const metricsCtx = document.getElementById('metrics-chart').getContext('2d');
+    charts.metrics = new Chart(metricsCtx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'CPU %',    data: points.map(p => p.cpu),    borderColor: green, backgroundColor: 'transparent', fill: false, borderWidth: 1.5 },
+                { label: 'Memory %', data: points.map(p => p.memory), borderColor: blue,  backgroundColor: 'transparent', fill: false, borderWidth: 1.5 }
+            ]
+        },
+        options: {
+            ...base,
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: { color: legend, font: { size: 10, family: 'Inter, -apple-system, sans-serif' }, boxWidth: 10, boxHeight: 1 }
+                }
+            },
+            scales: { ...base.scales, y: { ...base.scales.y, min: 0, max: 100 } }
+        }
+    });
+}
+
+function updateTimestamp() {
+    document.getElementById('timestamp').innerHTML = new Date().toLocaleString();
+}
+
+updateDashboard();
+updateTimestamp();
+setInterval(updateDashboard, 10000);
+setInterval(updateTimestamp, 1000);
+</script>
+</body>
+</html>
