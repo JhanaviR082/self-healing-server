@@ -10,6 +10,7 @@
 ## 📋 Table of Contents
 - [Overview](#-overview)
 - [Features](#-features)
+- [Key Highlights](#-key-highlights)
 - [Architecture](#-architecture)
 - [CI/CD Pipeline](#-cicd-pipeline)
 - [Data Flow](#-data-flow)
@@ -58,6 +59,20 @@ This project implements a **self-healing Linux server** that automatically detec
 | **Infrastructure as Code** | Single `setup.sh` script rebuilds entire server from scratch |
 
 ---
+
+## 🏆 Key Highlights
+
+- ⏱️ **< 60 seconds** recovery time — from crash detection to full service restoration
+- 📧 **Email alerts** with system metrics (CPU, Memory, Disk) sent immediately on failure
+- 📊 **Real-time dashboard** with 10-second refresh, 500-point historical graphs
+- 🔄 **Dual storage** architecture — local JSON for speed + GitHub Gist for offline access
+- 🚀 **CI/CD pipeline** — push to GitHub → auto-deploy in < 2 minutes
+- 🏗️ **Infrastructure as Code** — single `setup.sh` rebuilds entire server
+
+---
+
+
+
 ## 🏗️ Architecture
 
 ### System Overview
@@ -263,7 +278,7 @@ flowchart TD
 ## 🚀 Quick Start
 
 ### Prerequisites
-- VirtualBox installed on your Mac
+- VirtualBox installed 
 - GitHub account
 - Gmail account (for email alerts)
 
@@ -281,8 +296,8 @@ cd self-healing-server
 ### Manual Verification
 
 ```bash
-# SSH into your VM
-ssh -p 2222 jhanavi@localhost
+# SSH into VM
+ssh -p 2222 username@localhost
 
 # Verify services
 sudo systemctl status nginx
@@ -336,7 +351,7 @@ self-healing-server/
 ├── setup.sh                    # Infrastructure as Code
 └── README.md                   # Documentation
 
-Your VM (/var/www/html/)
+VM (/var/www/html/)
 ├── index.html                  # Website (served)
 ├── dashboard.html              # Dashboard (served)
 ├── current.json                # Live metrics
@@ -344,12 +359,12 @@ Your VM (/var/www/html/)
 ├── alerts.json                 # Crash alerts
 └── deploys.json                # Deployment history
 
-Your VM (/usr/local/bin/)
+VM (/usr/local/bin/)
 ├── nginx-health-check.sh       # Self-healing script
 ├── push-to-gist.sh             # Dual storage script
 └── deploy-from-github.sh       # Deployment script
 
-Your VM (/var/log/)
+VM (/var/log/)
 ├── nginx-health.log            # Health check logs
 └── deploy.log                  # Deployment logs
 ```
@@ -369,7 +384,7 @@ Your VM (/var/log/)
 
 ## 📄 License
 
-This project is open source and available under the MIT License.
+This project is open source and available.
 
 ---
 *Built to demonstrate DevOps, SRE, and Cloud Engineering skills.*
