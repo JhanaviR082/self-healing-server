@@ -1,10 +1,3 @@
-I see the issue — your README is getting cut off in the middle. Let me give you the **complete, properly formatted README** that you can copy and paste in one go:
-
----
-
-## 📝 Complete README.md (Copy This Entirely)
-
-```markdown
 # 🛡️ Self-Healing Server
 
 > A production-grade self-healing Linux server with automated recovery, real-time monitoring, and CI/CD pipeline.
@@ -26,7 +19,6 @@ I see the issue — your README is getting cut off in the middle. Let me give yo
 - [Contact](#-contact)
 
 ---
-
 ## 🎯 Overview
 
 This project implements a **self-healing Linux server** that automatically detects and recovers from failures, sends real-time alerts, and provides a live monitoring dashboard. It's designed to minimize downtime and reduce manual intervention — exactly how modern cloud infrastructure operates.
@@ -56,7 +48,6 @@ This project implements a **self-healing Linux server** that automatically detec
 | **Infrastructure as Code** | Single `setup.sh` script rebuilds entire server from scratch |
 
 ---
-
 ## 🏗️ Architecture
 
 ### System Overview
@@ -134,9 +125,6 @@ graph TB
     style HEALTH fill:#FF9800,stroke:#e65100,stroke-width:2px,color:#fff
     style GIST fill:#9C27B0,stroke:#6a1b9a,stroke-width:2px,color:#fff
 ```
-
----
-
 ## 🔄 CI/CD Pipeline
 
 ```mermaid
@@ -173,9 +161,6 @@ flowchart LR
     style K fill:#FF9800,stroke:#e65100,stroke-width:2px,color:#fff
     style O fill:#2196F3,stroke:#0b5e7e,stroke-width:2px,color:#fff
 ```
-
----
-
 ## 📊 Data Flow
 
 ```mermaid
@@ -220,9 +205,6 @@ flowchart TB
     style GIST fill:#9C27B0,stroke:#6a1b9a,stroke-width:2px,color:#fff
     style HTML fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
 ```
-
----
-
 ## ⚙️ Self-Healing Mechanism
 
 ```mermaid
@@ -261,9 +243,6 @@ flowchart TD
     style RESTART fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
     style DASH fill:#2196F3,stroke:#0b5e7e,stroke-width:2px,color:#fff
 ```
-
----
-
 ## 🛠️ Tech Stack
 
 | Category | Technology | Purpose |
@@ -280,7 +259,6 @@ flowchart TD
 | **Virtualization** | VirtualBox | VM with NAT + port forwarding |
 
 ---
-
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -341,7 +319,6 @@ git push
 ```
 
 ---
-
 ## 📁 Project Structure
 
 ```
@@ -377,7 +354,6 @@ Your VM (/var/log/)
 ```
 
 ---
-
 ## 🔮 Future Improvements
 
 - [ ] **GitHub App Authentication** — Auto-renewing tokens (no expiration)
@@ -395,19 +371,4 @@ Your VM (/var/log/)
 This project is open source and available under the MIT License.
 
 ---
-
-## 📬 Contact
-
-**Jhanavi R** — [GitHub](https://github.com/JhanaviR082)
-
-**Project Link:** [https://github.com/JhanaviR082/self-healing-server](https://github.com/JhanaviR082/self-healing-server)
-
-**Live Dashboard:** `http://localhost:8080/dashboard.html` (when VM is running)
-
----
-
 *Built to demonstrate DevOps, SRE, and Cloud Engineering skills.*
-```
-
----
-
