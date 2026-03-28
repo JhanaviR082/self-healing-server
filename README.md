@@ -16,7 +16,7 @@
 - [Project Structure](#-project-structure)
 - [Future Improvements](#-future-improvements)
 - [License](#-license)
-- [Contact](#-contact)
+
 
 ---
 ## 🎯 Overview
