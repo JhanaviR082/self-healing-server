@@ -2,6 +2,7 @@
   <h1>🛡️ Self-Healing Server</h1>
   <p><strong>Automated Recovery · Real-time Monitoring · CI/CD Pipeline</strong></p>
 </div>
+
 > A production-grade self-healing Linux server with automated recovery, real-time monitoring, and CI/CD pipeline.
 
 ---
@@ -24,7 +25,6 @@
 ![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu)
 ![Nginx](https://img.shields.io/badge/Nginx-1.24-009639?logo=nginx)
 ![GitHub Actions](https://img.shields.io/badge/CI/CD-GitHub%20Actions-2088FF)
-![License](https://img.shields.io/badge/License-MIT-green)
 
 </div>
 
